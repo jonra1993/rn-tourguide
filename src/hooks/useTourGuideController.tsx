@@ -7,15 +7,12 @@ import {
 } from '../components/TourGuideZoneByPosition'
 
 export const useTourGuideController = (tourKey?: string) => {
-  const { start, canStart, stop, eventEmitter, getCurrentStep, setTourKey } =
+  const { start, canStart, stop, eventEmitter, getCurrentStep } =
     React.useContext(TourGuideContext)
 
   const key = tourKey ?? '_default'
 
   const _start = (fromStep?: number) => {
-    if (setTourKey) {
-      setTourKey(key)
-    }
     if (start) {
       start(key, fromStep)
     }
@@ -33,12 +30,6 @@ export const useTourGuideController = (tourKey?: string) => {
     }
     return undefined
   }
-
-  React.useEffect(() => {
-    if (setTourKey) {
-      setTourKey(key)
-    }
-  }, [])
 
   const KeyedTourGuideZone: React.FC<Omit<TourGuideZoneProps, 'tourKey'>> =
     React.useCallback(

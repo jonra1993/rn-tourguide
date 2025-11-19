@@ -10,7 +10,6 @@ export interface Emitter {
 export type Ctx<T extends any> = Record<string, T> & { _default: T }
 
 export interface ITourGuideContext {
-  setTourKey?: (tourKey: string) => void
   eventEmitter?: Ctx<Emitter>
   canStart: Ctx<boolean>
   registerStep?(key: string, step: IStep): void

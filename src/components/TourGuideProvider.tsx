@@ -1,6 +1,6 @@
 import mitt, { Emitter } from 'mitt'
 import * as React from 'react'
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { Easing, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { TourGuideContext, Ctx } from './TourGuideContext'
 import { useIsMounted } from '../hooks/useIsMounted'
 import { IStep, Labels, StepObject, Steps } from '../types'
@@ -49,12 +49,11 @@ export const TourGuideProvider = ({
   dismissOnPress = false,
   preventOutsideInteraction = false,
 }: TourGuideProviderProps) => {
-  const [tourKey, setTourKey] = useState<string | '_default'>('_default')
   const [visible, updateVisible] = useState<Ctx<boolean | undefined>>({
     _default: false,
   })
   const setVisible = (key: string, value: boolean) =>
-    updateVisible((visible) => {
+    updateVisible((visible: Ctx<boolean | undefined>) => {
       const newVisible = { ...visible }
       newVisible[key] = value
       return newVisible
@@ -73,45 +72,53 @@ export const TourGuideProvider = ({
     _default: new mitt(),
   })
 
-  const modal = useRef<any>()
+  const modalRefs = useRef<Record<string, any>>({})
 
   useEffect(() => {
-    if (mounted && visible[tourKey] === false) {
-      eventEmitter[tourKey]?.emit('stop')
+    if (mounted) {
+      Object.keys(visible).forEach((key) => {
+        if (visible[key] === false && eventEmitter[key]) {
+          eventEmitter[key]?.emit('stop')
+        }
+      })
     }
   }, [visible])
 
   useEffect(() => {
-    if (visible[tourKey] || currentStep[tourKey]) {
-      moveToCurrentStep(tourKey)
-    }
+    Object.keys(visible).forEach((key) => {
+      if (visible[key] || currentStep[key]) {
+        moveToCurrentStep(key)
+      }
+    })
   }, [visible, currentStep])
 
   useEffect(() => {
     if (mounted) {
-      if (steps[tourKey]) {
-        if (
-          (Array.isArray(steps[tourKey]) && steps[tourKey].length > 0) ||
-          Object.entries(steps[tourKey]).length > 0
-        ) {
-          setCanStart((obj) => {
-            const newObj = { ...obj }
-            newObj[tourKey] = true
-            return newObj
-          })
-          if (typeof startAtMount === 'string') {
-            start(startAtMount)
-          } else if (startAtMount) {
-            start('_default')
+      Object.keys(steps).forEach((key) => {
+        if (steps[key]) {
+          if (
+            (Array.isArray(steps[key]) && steps[key].length > 0) ||
+            Object.entries(steps[key]).length > 0
+          ) {
+            setCanStart((obj: Ctx<boolean>) => {
+              const newObj = { ...obj }
+              newObj[key] = true
+              return newObj
+            })
+            if (typeof startAtMount === 'string' && startAtMount === key) {
+              start(startAtMount)
+            } else if (startAtMount === true && key === '_default') {
+              start('_default')
+            }
+          } else {
+            setCanStart((obj: Ctx<boolean>) => {
+              const newObj = { ...obj }
+              newObj[key] = false
+              return newObj
+            })
           }
-        } else {
-          setCanStart((obj) => {
-            const newObj = { ...obj }
-            newObj[tourKey] = false
-            return newObj
-          })
         }
-      }
+      })
     }
   }, [mounted, steps])
 
@@ -126,7 +133,7 @@ export const TourGuideProvider = ({
     ) {
       return
     }
-    await modal.current?.animateMove({
+    await modalRefs.current[key]?.animateMove({
       width: size.width + OFFSET_WIDTH,
       height: size.height + OFFSET_WIDTH,
       left: Math.round(size.x) - OFFSET_WIDTH / 2,
@@ -136,7 +143,7 @@ export const TourGuideProvider = ({
 
   const setCurrentStep = (key: string, step?: IStep) =>
     new Promise<void>((resolve) => {
-      updateCurrentStep((currentStep) => {
+      updateCurrentStep((currentStep: Ctx<IStep | undefined>) => {
         const newStep = { ...currentStep }
         newStep[key] = step
         eventEmitter[key]?.emit('stepChange', step)
@@ -184,8 +191,30 @@ export const TourGuideProvider = ({
     setCurrentStep(key, undefined)
   }
 
+  // Memoize navigation functions per tour key to prevent unnecessary re-renders
+  const tourNavigationFunctions = useMemo(() => {
+    const functions: Record<
+      string,
+      {
+        next: () => Promise<void>
+        prev: () => Promise<void>
+        stop: () => void
+      }
+    > = {}
+
+    Object.keys({ ...visible, ...currentStep, ...steps }).forEach((key) => {
+      functions[key] = {
+        next: () => _next(key),
+        prev: () => _prev(key),
+        stop: () => _stop(key),
+      }
+    })
+
+    return functions
+  }, [visible, currentStep, steps])
+
   const registerStep = (key: string, step: IStep) => {
-    setSteps((previousSteps) => {
+    setSteps((previousSteps: Ctx<Steps>) => {
       const newSteps = { ...previousSteps }
       newSteps[key] = {
         ...previousSteps[key],
@@ -202,7 +231,7 @@ export const TourGuideProvider = ({
     if (!mounted) {
       return
     }
-    setSteps((previousSteps) => {
+    setSteps((previousSteps: Ctx<Steps>) => {
       const newSteps = { ...previousSteps }
       newSteps[key] = Object.entries(previousSteps[key] as StepObject)
         .filter(([key]) => key !== stepName)
@@ -232,9 +261,7 @@ export const TourGuideProvider = ({
       startTries.current = 0
     }
   }
-  const next = () => _next(tourKey)
-  const prev = () => _prev(tourKey)
-  const stop = () => _stop(tourKey)
+
   return (
     <View style={[styles.container, wrapperStyle]}>
       <TourGuideContext.Provider
@@ -246,32 +273,47 @@ export const TourGuideProvider = ({
           start,
           stop,
           canStart,
-          setTourKey,
         }}
       >
         {children}
-        <Modal
-          ref={modal}
-          {...{
-            next,
-            prev,
-            stop,
-            visible: visible[tourKey],
-            isFirstStep: isFirstStep[tourKey],
-            isLastStep: isLastStep[tourKey],
-            currentStep: currentStep[tourKey],
-            labels,
-            tooltipComponent,
-            tooltipStyle,
-            androidStatusBarVisible,
-            backdropColor,
-            animationDuration,
-            maskOffset,
-            borderRadius,
-            dismissOnPress,
-            preventOutsideInteraction,
-          }}
-        />
+        {Object.keys(visible)
+          .filter((key) => visible[key] === true)
+          .map((key) => {
+            const navFuncs = tourNavigationFunctions[key] || {
+              next: () => _next(key),
+              prev: () => _prev(key),
+              stop: () => _stop(key),
+            }
+
+            return (
+              <Modal
+                key={key}
+                ref={(ref: any) => {
+                  if (ref) {
+                    modalRefs.current[key] = ref
+                  }
+                }}
+                next={navFuncs.next}
+                prev={navFuncs.prev}
+                stop={navFuncs.stop}
+                visible={visible[key]}
+                isFirstStep={isFirstStep[key]}
+                isLastStep={isLastStep[key]}
+                currentStep={currentStep[key]}
+                labels={labels ?? {}}
+                tooltipComponent={tooltipComponent as any}
+                tooltipStyle={tooltipStyle}
+                androidStatusBarVisible={androidStatusBarVisible ?? false}
+                backdropColor={backdropColor ?? 'rgba(0, 0, 0, 0.4)'}
+                easing={Easing.elastic(0.7)}
+                animationDuration={animationDuration}
+                maskOffset={maskOffset}
+                borderRadius={borderRadius}
+                dismissOnPress={dismissOnPress}
+                preventOutsideInteraction={preventOutsideInteraction}
+              />
+            )
+          })}
       </TourGuideContext.Provider>
     </View>
   )

@@ -18,22 +18,22 @@ import { Tooltip, TooltipProps } from './Tooltip'
 declare var __TEST__: boolean
 
 export interface ModalProps {
-  ref: any
+  ref?: any
   currentStep?: IStep
   visible?: boolean
   isFirstStep: boolean
   isLastStep: boolean
   animationDuration?: number
-  tooltipComponent: React.ComponentType<TooltipProps>
+  tooltipComponent?: React.ComponentType<TooltipProps>
   tooltipStyle?: StyleProp<ViewStyle>
   maskOffset?: number
   borderRadius?: number
   borderRadiusObject?: BorderRadiusObject
-  androidStatusBarVisible: boolean
-  backdropColor: string
-  labels: Labels
+  androidStatusBarVisible?: boolean
+  backdropColor?: string
+  labels?: Labels
   dismissOnPress?: boolean
-  easing: (value: number) => number
+  easing?: (value: number) => number
   stop: () => void
   next: () => void
   prev: () => void
@@ -278,9 +278,9 @@ export class Modal extends React.Component<ModalProps, State> {
       style={styles.overlayContainer}
       size={this.state.size!}
       position={this.state.position!}
-      easing={this.props.easing}
+      easing={this.props.easing!}
       animationDuration={this.props.animationDuration}
-      backdropColor={this.props.backdropColor}
+      backdropColor={this.props.backdropColor!}
       currentStep={this.props.currentStep}
       maskOffset={this.props.maskOffset}
       borderRadius={this.props.borderRadius}
@@ -292,7 +292,7 @@ export class Modal extends React.Component<ModalProps, State> {
   renderTooltip() {
     const { tooltipComponent: TooltipComponent, visible } = this.props
 
-    if (!visible) {
+    if (!visible || !TooltipComponent) {
       return null
     }
 
