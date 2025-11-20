@@ -12,6 +12,7 @@ interface Props {
   active?: boolean
   maskOffset?: number
   borderRadius?: number
+  focusStyle?: any
   children: React.ReactNode
   keepTooltipPosition?: boolean
   tooltipBottomOffset?: number

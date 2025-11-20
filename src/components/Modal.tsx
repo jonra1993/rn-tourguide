@@ -332,6 +332,45 @@ export class Modal extends React.Component<ModalProps, State> {
     ) : null
   }
 
+  renderFocusedAreaOverlay() {
+    const { currentStep, maskOffset } = this.props
+    const stateSize = this.state.size
+    const statePosition = this.state.position
+
+    if (!currentStep?.focusStyle || !stateSize || !statePosition) {
+      return null
+    }
+
+    const size: ValueXY = stateSize
+    const position: ValueXY = statePosition
+
+    // Use maskOffset from currentStep or props to create padding
+    const offset = currentStep.maskOffset ?? maskOffset ?? 0
+
+    return (
+      <View
+        pointerEvents='none'
+        style={{
+          position: 'absolute',
+          left: position.x + offset,
+          top: position.y + offset,
+          width: size.x - offset * 2,
+          height: size.y - offset * 2,
+        }}
+      >
+        <View
+          style={[
+            {
+              width: '100%',
+              height: '100%',
+            },
+            currentStep.focusStyle,
+          ]}
+        />
+      </View>
+    )
+  }
+
   render() {
     const containerVisible = this.state.containerVisible || this.props.visible
     const contentVisible = this.state.layout && containerVisible
@@ -351,6 +390,7 @@ export class Modal extends React.Component<ModalProps, State> {
           {contentVisible && (
             <>
               {this.renderMask()}
+              {this.renderFocusedAreaOverlay()}
               {this.renderNonInteractionPlaceholder()}
               {this.renderTooltip()}
             </>

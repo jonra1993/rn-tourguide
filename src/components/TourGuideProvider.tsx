@@ -222,6 +222,11 @@ export const TourGuideProvider = ({
       }
       return newSteps
     })
+    // If this step is currently active, update currentStep to point to the new step object
+    // This ensures hot-reload updates are reflected in the tooltip
+    if (currentStep[key]?.name === step.name) {
+      setCurrentStep(key, step)
+    }
     if (!eventEmitter[key]) {
       eventEmitter[key] = new mitt()
     }

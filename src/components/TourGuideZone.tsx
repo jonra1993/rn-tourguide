@@ -12,6 +12,7 @@ export interface TourGuideZoneProps {
   shape?: Shape
   maskOffset?: number
   borderRadius?: number
+  focusStyle?: StyleProp<ViewStyle>
   children?: React.ReactNode
   style?: StyleProp<ViewStyle>
   keepTooltipPosition?: boolean
@@ -28,6 +29,7 @@ export const TourGuideZone = ({
   text,
   maskOffset,
   borderRadius,
+  focusStyle,
   style,
   keepTooltipPosition,
   tooltipBottomOffset,
@@ -47,6 +49,7 @@ export const TourGuideZone = ({
         shape,
         maskOffset,
         borderRadius,
+        focusStyle,
         keepTooltipPosition,
         tooltipBottomOffset,
         borderRadiusObject,

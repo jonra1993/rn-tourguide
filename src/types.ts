@@ -14,6 +14,7 @@ export interface IStep {
   shape?: Shape
   maskOffset?: number
   borderRadius?: number
+  focusStyle?: any
   keepTooltipPosition?: boolean
   tooltipBottomOffset?: number
   borderRadiusObject?: BorderRadiusObject

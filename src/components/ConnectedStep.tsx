@@ -16,6 +16,7 @@ interface Props {
   maskOffset?: number
   borderRadiusObject?: BorderRadiusObject
   borderRadius?: number
+  focusStyle?: any
   keepTooltipPosition?: boolean
   tooltipBottomOffset?: number
 }
